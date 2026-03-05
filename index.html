@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Soccer Lift Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="background-glow" aria-hidden="true"></div>
+    <main class="app-shell">
+      <header class="hero">
+        <p class="kicker">Team Logistics</p>
+        <h1>Soccer Lift Planner</h1>
+        <p>
+          Organise Tuesday and Wednesday training rides. Track kids who need help,
+          then volunteer for pickup or drop-off.
+        </p>
+      </header>
+
+      <section class="panel">
+        <h2>Add Kid Requiring a Lift</h2>
+        <form id="kid-form" class="form-grid">
+          <label>
+            Kid Name
+            <input id="kid-name" name="kidName" required placeholder="e.g. Ava" />
+          </label>
+          <label>
+            Training Night
+            <select id="training-day" name="trainingDay" required>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+            </select>
+          </label>
+          <label>
+            Pickup Location
+            <input
+              id="pickup-location"
+              name="pickupLocation"
+              required
+              placeholder="e.g. School car park"
+            />
+          </label>
+          <fieldset class="need-group">
+            <legend>Lift Needed</legend>
+            <label class="check-label">
+              <input id="need-pickup" name="needPickup" type="checkbox" checked />
+              Pickup
+            </label>
+            <label class="check-label">
+              <input id="need-dropoff" name="needDropoff" type="checkbox" checked />
+              Drop-Off
+            </label>
+          </fieldset>
+          <button type="submit">Add Lift Request</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="row-between">
+          <h2>Kids Needing Lifts</h2>
+          <label class="filter-wrap" for="day-filter">
+            Night
+            <select id="day-filter">
+              <option value="All">All</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="request-list" class="request-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="request-card-template">
+      <article class="request-card">
+        <div class="card-head">
+          <h3 data-kid-name></h3>
+          <div class="head-pills">
+            <span class="need-pill" data-need></span>
+            <span class="day-pill" data-day></span>
+          </div>
+        </div>
+        <p class="cover-summary" data-cover-summary></p>
+        <button class="toggle-details-btn" data-toggle-details type="button"></button>
+
+        <div class="details-body" data-details-body>
+          <p class="location" data-location></p>
+          <div class="ride-grid">
+            <section class="ride-slot">
+              <h4>Pickup</h4>
+              <p data-pickup-status></p>
+              <form class="volunteer-form" data-type="pickup">
+                <input name="parentName" required placeholder="Parent name" />
+                <button type="submit">Volunteer Pickup</button>
+              </form>
+              <button class="clear-btn" data-clear="pickup" type="button">Clear Pickup</button>
+            </section>
+
+            <section class="ride-slot">
+              <h4>Drop-Off</h4>
+              <p data-dropoff-status></p>
+              <form class="volunteer-form" data-type="dropoff">
+                <input name="parentName" required placeholder="Parent name" />
+                <button type="submit">Volunteer Drop-Off</button>
+              </form>
+              <button class="clear-btn" data-clear="dropoff" type="button">Clear Drop-Off</button>
+            </section>
+          </div>
+          <button class="remove-request" type="button">Remove Request</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
