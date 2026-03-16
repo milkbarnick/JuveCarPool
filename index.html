@@ -18,13 +18,11 @@
         </p>
 
         <section class="auth-block panel-lite">
-          <h2>Parent Name</h2>
-          <div class="auth-grid">
-            <label>
-              Your Name
-              <input id="parent-name" placeholder="e.g. Sarah" />
-            </label>
-          </div>
+          <h2>Volunteer Board</h2>
+          <p>
+            Anyone can help with rides. You will be asked for your name when you
+            click a volunteer button.
+          </p>
           <p id="app-feedback" class="auth-feedback" aria-live="polite"></p>
         </section>
       </header>
@@ -106,7 +104,12 @@
               <h4>Pickup</h4>
               <p data-pickup-status></p>
               <form class="volunteer-form" data-type="pickup">
-                <button class="pickup-btn" type="submit">Volunteer Pickup</button>
+                <button class="pickup-btn volunteer-trigger" type="button">Volunteer Pickup</button>
+                <div class="volunteer-entry" hidden>
+                  <input name="volunteerName" placeholder="Your name" />
+                  <button class="pickup-btn" type="submit">Confirm Pickup</button>
+                  <button class="clear-btn cancel-btn" type="button">Cancel</button>
+                </div>
               </form>
               <button class="clear-btn" data-clear="pickup" type="button">Clear Pickup</button>
             </section>
@@ -115,7 +118,12 @@
               <h4>Drop-Off</h4>
               <p data-dropoff-status></p>
               <form class="volunteer-form" data-type="dropoff">
-                <button class="dropoff-btn" type="submit">Volunteer Drop-Off</button>
+                <button class="dropoff-btn volunteer-trigger" type="button">Volunteer Drop-Off</button>
+                <div class="volunteer-entry" hidden>
+                  <input name="volunteerName" placeholder="Your name" />
+                  <button class="dropoff-btn" type="submit">Confirm Drop-Off</button>
+                  <button class="clear-btn cancel-btn" type="button">Cancel</button>
+                </div>
               </form>
               <button class="clear-btn" data-clear="dropoff" type="button">Clear Drop-Off</button>
             </section>

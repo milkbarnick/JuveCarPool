@@ -1,5 +1,4 @@
 const AVATARS = ["🦊", "🐯", "🐨", "🐼", "🐸", "🦄", "🐙", "🐝", "🦁", "🐬"];
-const PARENT_NAME_KEY = "soccer-parent-name-v1";
 
 const kidForm = document.getElementById("kid-form");
 const kidNameInput = document.getElementById("kid-name");
@@ -10,7 +9,6 @@ const needDropoffInput = document.getElementById("need-dropoff");
 const dayFilter = document.getElementById("day-filter");
 const requestList = document.getElementById("request-list");
 const template = document.getElementById("request-card-template");
-const parentNameInput = document.getElementById("parent-name");
 const appFeedback = document.getElementById("app-feedback");
 
 let requests = [];
@@ -22,21 +20,9 @@ function getAvatar(seed) {
   return AVATARS[sum % AVATARS.length];
 }
 
-function getParentName() {
-  return (parentNameInput.value || "").trim();
-}
-
 function setFeedback(message, isError = false) {
   appFeedback.textContent = message;
   appFeedback.classList.toggle("error", isError);
-}
-
-function saveParentName() {
-  localStorage.setItem(PARENT_NAME_KEY, getParentName());
-}
-
-function loadParentName() {
-  parentNameInput.value = localStorage.getItem(PARENT_NAME_KEY) || "";
 }
 
 async function fetchRequests() {
@@ -130,22 +116,31 @@ function renderRequests() {
     toggleRideInputs(pickupForm, clearPickupBtn, request.needsPickup);
     toggleRideInputs(dropoffForm, clearDropoffBtn, request.needsDropoff);
 
-    const parentName = getParentName();
-    pickupForm.querySelector("button").textContent = parentName
-      ? `Volunteer as ${parentName}`
-      : "Volunteer Pickup";
-    dropoffForm.querySelector("button").textContent = parentName
-      ? `Volunteer as ${parentName}`
-      : "Volunteer Drop-Off";
-
     node.querySelectorAll(".volunteer-form").forEach((form) => {
+      const triggerButton = form.querySelector(".volunteer-trigger");
+      const entry = form.querySelector(".volunteer-entry");
+      const entryInput = entry.querySelector('input[name="volunteerName"]');
+      const cancelButton = entry.querySelector(".cancel-btn");
+
+      triggerButton.addEventListener("click", () => {
+        entry.hidden = false;
+        triggerButton.hidden = true;
+        entryInput.focus();
+      });
+
+      cancelButton.addEventListener("click", () => {
+        entry.hidden = true;
+        triggerButton.hidden = false;
+        entryInput.value = "";
+      });
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        const volunteerName = getParentName();
+        const volunteerName = entryInput.value.trim();
         if (!volunteerName) {
-          setFeedback("Add your name first, then volunteer.", true);
-          parentNameInput.focus();
+          setFeedback("Please enter your name to volunteer.", true);
+          entryInput.focus();
           return;
         }
 
@@ -165,7 +160,7 @@ function renderRequests() {
           return;
         }
 
-        setFeedback("Ride assignment updated.");
+        setFeedback(`${volunteerName} is now assigned.`);
         await fetchRequests();
         renderRequests();
       });
@@ -338,11 +333,6 @@ kidForm.addEventListener("submit", async (event) => {
 
 dayFilter.addEventListener("change", renderRequests);
 
-parentNameInput.addEventListener("input", () => {
-  saveParentName();
-  renderRequests();
-});
-
 async function initialize() {
   const url = window.SUPABASE_URL;
   const key = window.SUPABASE_ANON_KEY;
@@ -354,8 +344,7 @@ async function initialize() {
 
   supabaseClient = window.supabase.createClient(url, key);
 
-  loadParentName();
-  setFeedback("Shared board is live. Add your name above before volunteering.");
+  setFeedback("Shared board is live. Click a volunteer button to add your name.");
 
   await fetchRequests();
   renderRequests();

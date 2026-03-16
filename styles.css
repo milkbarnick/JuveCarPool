@@ -387,6 +387,22 @@ button:hover {
   flex-wrap: wrap;
 }
 
+.volunteer-entry {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.volunteer-entry input {
+  flex: 1;
+  min-width: 130px;
+}
+
+.cancel-btn {
+  margin-top: 0;
+}
+
 .pickup-btn {
   background: var(--pickup);
 }
