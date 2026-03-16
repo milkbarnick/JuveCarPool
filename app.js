@@ -1,4 +1,5 @@
-const STORAGE_KEY = "soccer-lift-requests-v1";
+const AVATARS = ["🦊", "🐯", "🐨", "🐼", "🐸", "🦄", "🐙", "🐝", "🦁", "🐬"];
+const PARENT_NAME_KEY = "soccer-parent-name-v1";
 
 const kidForm = document.getElementById("kid-form");
 const kidNameInput = document.getElementById("kid-name");
@@ -9,34 +10,64 @@ const needDropoffInput = document.getElementById("need-dropoff");
 const dayFilter = document.getElementById("day-filter");
 const requestList = document.getElementById("request-list");
 const template = document.getElementById("request-card-template");
+const parentNameInput = document.getElementById("parent-name");
+const appFeedback = document.getElementById("app-feedback");
 
-let requests = loadRequests();
+let requests = [];
+let supabaseClient = null;
+let requestsChannel = null;
 
-function loadRequests() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    // Backward compatibility for existing saved requests.
-    return parsed.map((item) => ({
-      ...item,
-      needsPickup: item.needsPickup ?? true,
-      needsDropoff: item.needsDropoff ?? true,
-    }));
-  } catch {
-    return [];
-  }
+function getAvatar(seed) {
+  const sum = seed.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+  return AVATARS[sum % AVATARS.length];
 }
 
-function saveRequests() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+function getParentName() {
+  return (parentNameInput.value || "").trim();
+}
+
+function setFeedback(message, isError = false) {
+  appFeedback.textContent = message;
+  appFeedback.classList.toggle("error", isError);
+}
+
+function saveParentName() {
+  localStorage.setItem(PARENT_NAME_KEY, getParentName());
+}
+
+function loadParentName() {
+  parentNameInput.value = localStorage.getItem(PARENT_NAME_KEY) || "";
+}
+
+async function fetchRequests() {
+  if (!supabaseClient) {
+    requests = [];
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("ride_requests")
+    .select(
+      "id, kid_name, day, location, needs_pickup, needs_dropoff, pickup_parent_name, dropoff_parent_name, created_at"
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    setFeedback(`Failed to load requests: ${error.message}`, true);
+    requests = [];
+    return;
+  }
+
+  requests = (data || []).map((row) => ({
+    id: row.id,
+    kidName: row.kid_name,
+    day: row.day,
+    location: row.location,
+    needsPickup: row.needs_pickup,
+    needsDropoff: row.needs_dropoff,
+    pickupParent: row.pickup_parent_name || "",
+    dropoffParent: row.dropoff_parent_name || "",
+  }));
 }
 
 function renderRequests() {
@@ -58,15 +89,19 @@ function renderRequests() {
   visible.forEach((request) => {
     const node = template.content.firstElementChild.cloneNode(true);
 
+    node.querySelector("[data-avatar]").textContent = getAvatar(`${request.kidName}${request.id}`);
     node.querySelector("[data-kid-name]").textContent = request.kidName;
     node.querySelector("[data-day]").textContent = request.day;
+
     const needPill = node.querySelector("[data-need]");
     const needLabel = formatNeedText(request);
     needPill.textContent = needLabel;
     needPill.classList.toggle("need-pill-covered", needLabel === "All rides covered");
+
     const fullyCovered = isFullyCovered(request);
     const coverSummary = node.querySelector("[data-cover-summary]");
     coverSummary.textContent = buildCoverageSummary(request);
+
     const detailsBody = node.querySelector("[data-details-body]");
     const toggleDetailsButton = node.querySelector("[data-toggle-details]");
     toggleDetailsButton.style.display = fullyCovered ? "inline-block" : "none";
@@ -74,6 +109,7 @@ function renderRequests() {
       node.classList.add("minimized");
       toggleDetailsButton.textContent = "View details";
     }
+
     node.querySelector("[data-location]").textContent = `Location: ${request.location}`;
 
     const pickupStatus = node.querySelector("[data-pickup-status]");
@@ -83,72 +119,89 @@ function renderRequests() {
     const clearPickupBtn = node.querySelector('.clear-btn[data-clear="pickup"]');
     const clearDropoffBtn = node.querySelector('.clear-btn[data-clear="dropoff"]');
 
-    setStatusText(
-      pickupStatus,
-      request.pickupParent,
-      "Pickup not assigned",
-      request.needsPickup
-    );
+    setStatusText(pickupStatus, request.pickupParent, "Pickup not assigned", request.needsPickup);
     setStatusText(
       dropoffStatus,
       request.dropoffParent,
       "Drop-off not assigned",
       request.needsDropoff
     );
+
     toggleRideInputs(pickupForm, clearPickupBtn, request.needsPickup);
     toggleRideInputs(dropoffForm, clearDropoffBtn, request.needsDropoff);
 
+    const parentName = getParentName();
+    pickupForm.querySelector("button").textContent = parentName
+      ? `Volunteer as ${parentName}`
+      : "Volunteer Pickup";
+    dropoffForm.querySelector("button").textContent = parentName
+      ? `Volunteer as ${parentName}`
+      : "Volunteer Drop-Off";
+
     node.querySelectorAll(".volunteer-form").forEach((form) => {
-      form.addEventListener("submit", (event) => {
+      form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const parentName = new FormData(form).get("parentName").toString().trim();
-        if (!parentName) {
+
+        const volunteerName = getParentName();
+        if (!volunteerName) {
+          setFeedback("Add your name first, then volunteer.", true);
+          parentNameInput.focus();
           return;
         }
 
         const type = form.dataset.type;
-        const target = requests.find((item) => item.id === request.id);
-        if (!target) {
-          return;
-        }
-        if ((type === "pickup" && !target.needsPickup) || (type === "dropoff" && !target.needsDropoff)) {
+        if ((type === "pickup" && !request.needsPickup) || (type === "dropoff" && !request.needsDropoff)) {
           return;
         }
 
-        if (type === "pickup") {
-          target.pickupParent = parentName;
-        } else {
-          target.dropoffParent = parentName;
+        const payload =
+          type === "pickup"
+            ? { pickup_parent_name: volunteerName }
+            : { dropoff_parent_name: volunteerName };
+
+        const { error } = await supabaseClient.from("ride_requests").update(payload).eq("id", request.id);
+        if (error) {
+          setFeedback(`Could not save volunteer: ${error.message}`, true);
+          return;
         }
 
-        saveRequests();
+        setFeedback("Ride assignment updated.");
+        await fetchRequests();
         renderRequests();
       });
     });
 
     node.querySelectorAll(".clear-btn").forEach((button) => {
-      button.addEventListener("click", () => {
-        const target = requests.find((item) => item.id === request.id);
-        if (!target) {
+      button.addEventListener("click", async () => {
+        const payload =
+          button.dataset.clear === "pickup"
+            ? { pickup_parent_name: null }
+            : { dropoff_parent_name: null };
+
+        const { error } = await supabaseClient.from("ride_requests").update(payload).eq("id", request.id);
+        if (error) {
+          setFeedback(`Could not clear assignment: ${error.message}`, true);
           return;
         }
 
-        if (button.dataset.clear === "pickup") {
-          target.pickupParent = "";
-        } else {
-          target.dropoffParent = "";
-        }
-
-        saveRequests();
+        setFeedback("Ride assignment cleared.");
+        await fetchRequests();
         renderRequests();
       });
     });
 
-    node.querySelector(".remove-request").addEventListener("click", () => {
-      requests = requests.filter((item) => item.id !== request.id);
-      saveRequests();
+    node.querySelector(".remove-request").addEventListener("click", async () => {
+      const { error } = await supabaseClient.from("ride_requests").delete().eq("id", request.id);
+      if (error) {
+        setFeedback(`Could not remove request: ${error.message}`, true);
+        return;
+      }
+
+      setFeedback("Request removed.");
+      await fetchRequests();
       renderRequests();
     });
+
     toggleDetailsButton.addEventListener("click", () => {
       const expanded = node.classList.toggle("expanded");
       detailsBody.style.display = expanded ? "block" : "";
@@ -223,8 +276,31 @@ function buildCoverageSummary(request) {
   return `${pickupText} | ${dropoffText}`;
 }
 
-kidForm.addEventListener("submit", (event) => {
+async function setupRealtime() {
+  if (!supabaseClient || requestsChannel) {
+    return;
+  }
+
+  requestsChannel = supabaseClient
+    .channel("ride-requests-live")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "ride_requests" },
+      async () => {
+        await fetchRequests();
+        renderRequests();
+      }
+    )
+    .subscribe();
+}
+
+kidForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  if (!supabaseClient) {
+    setFeedback("Supabase is not configured yet.", true);
+    return;
+  }
 
   const kidName = kidNameInput.value.trim();
   const day = dayInput.value;
@@ -239,24 +315,51 @@ kidForm.addEventListener("submit", (event) => {
     return;
   }
 
-  requests.unshift({
-    id: crypto.randomUUID(),
-    kidName,
+  const { error } = await supabaseClient.from("ride_requests").insert({
+    kid_name: kidName,
     day,
     location,
-    needsPickup,
-    needsDropoff,
-    pickupParent: "",
-    dropoffParent: "",
+    needs_pickup: needsPickup,
+    needs_dropoff: needsDropoff,
   });
 
-  saveRequests();
+  if (error) {
+    setFeedback(`Could not add request: ${error.message}`, true);
+    return;
+  }
+
+  setFeedback("Lift request added.");
   kidForm.reset();
   dayInput.value = day;
   kidNameInput.focus();
+  await fetchRequests();
   renderRequests();
 });
 
 dayFilter.addEventListener("change", renderRequests);
 
-renderRequests();
+parentNameInput.addEventListener("input", () => {
+  saveParentName();
+  renderRequests();
+});
+
+async function initialize() {
+  const url = window.SUPABASE_URL;
+  const key = window.SUPABASE_ANON_KEY;
+
+  if (!url || !key || !window.supabase?.createClient) {
+    setFeedback("Set SUPABASE_URL and SUPABASE_ANON_KEY in config.js.", true);
+    return;
+  }
+
+  supabaseClient = window.supabase.createClient(url, key);
+
+  loadParentName();
+  setFeedback("Shared board is live. Add your name above before volunteering.");
+
+  await fetchRequests();
+  renderRequests();
+  await setupRealtime();
+}
+
+initialize();

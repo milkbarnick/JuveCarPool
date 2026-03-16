@@ -9,6 +9,10 @@
   --accent-strong: #a73310;
   --line: #f1d1b8;
   --good: #1f6f36;
+  --pickup: #1d66d4;
+  --pickup-strong: #184ea5;
+  --dropoff: #d47f1d;
+  --dropoff-strong: #a76113;
 }
 
 * {
@@ -53,6 +57,14 @@ body {
   animation: fade-up 420ms ease-out;
 }
 
+.panel-lite {
+  margin-top: 1rem;
+  border: 1px solid #ebc9af;
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: #fff6ea;
+}
+
 .kicker {
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -82,10 +94,22 @@ h1 {
   animation: fade-up 560ms ease-out;
 }
 
-.form-grid {
+.app-locked .requires-auth {
+  display: none;
+}
+
+.app-unlocked .locked-note {
+  display: none;
+}
+
+.locked-note p {
+  color: #754f39;
+}
+
+.auth-grid {
   display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   align-items: end;
 }
 
@@ -93,6 +117,44 @@ label {
   display: grid;
   gap: 0.35rem;
   font-weight: 600;
+}
+
+.auth-feedback {
+  margin: 0.65rem 0 0;
+  color: #305c8a;
+  font-weight: 700;
+}
+
+.auth-feedback.error {
+  color: #8a331e;
+}
+
+.session-box {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.parent-avatar,
+.kid-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffe6ce;
+  border: 1px solid #efc6a3;
+  font-size: 1.1rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
 }
 
 .need-group {
@@ -190,15 +252,21 @@ button:hover {
   gap: 0.8rem;
 }
 
+.kid-title {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.kid-title h3 {
+  margin: 0;
+}
+
 .head-pills {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: flex-end;
-}
-
-.card-head h3 {
-  margin: 0;
 }
 
 .need-pill,
@@ -263,6 +331,24 @@ button:hover {
   padding: 0.7rem;
 }
 
+.pickup-slot {
+  border-color: #b7d1f5;
+  background: #f2f7ff;
+}
+
+.dropoff-slot {
+  border-color: #f2cfa7;
+  background: #fff7ed;
+}
+
+.pickup-slot h4 {
+  color: var(--pickup-strong);
+}
+
+.dropoff-slot h4 {
+  color: var(--dropoff-strong);
+}
+
 .ride-slot h4 {
   margin-bottom: 0.3rem;
 }
@@ -278,9 +364,20 @@ button:hover {
   flex-wrap: wrap;
 }
 
-.volunteer-form input {
-  flex: 1;
-  min-width: 130px;
+.pickup-btn {
+  background: var(--pickup);
+}
+
+.pickup-btn:hover {
+  background: var(--pickup-strong);
+}
+
+.dropoff-btn {
+  background: var(--dropoff);
+}
+
+.dropoff-btn:hover {
+  background: var(--dropoff-strong);
 }
 
 .clear-btn,

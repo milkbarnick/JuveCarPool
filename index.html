@@ -16,6 +16,17 @@
           Organise Tuesday and Wednesday training rides. Track kids who need help,
           then volunteer for pickup or drop-off.
         </p>
+
+        <section class="auth-block panel-lite">
+          <h2>Parent Name</h2>
+          <div class="auth-grid">
+            <label>
+              Your Name
+              <input id="parent-name" placeholder="e.g. Sarah" />
+            </label>
+          </div>
+          <p id="app-feedback" class="auth-feedback" aria-live="polite"></p>
+        </section>
       </header>
 
       <section class="panel">
@@ -76,7 +87,10 @@
     <template id="request-card-template">
       <article class="request-card">
         <div class="card-head">
-          <h3 data-kid-name></h3>
+          <div class="kid-title">
+            <span class="kid-avatar" data-avatar></span>
+            <h3 data-kid-name></h3>
+          </div>
           <div class="head-pills">
             <span class="need-pill" data-need></span>
             <span class="day-pill" data-day></span>
@@ -88,22 +102,20 @@
         <div class="details-body" data-details-body>
           <p class="location" data-location></p>
           <div class="ride-grid">
-            <section class="ride-slot">
+            <section class="ride-slot pickup-slot">
               <h4>Pickup</h4>
               <p data-pickup-status></p>
               <form class="volunteer-form" data-type="pickup">
-                <input name="parentName" required placeholder="Parent name" />
-                <button type="submit">Volunteer Pickup</button>
+                <button class="pickup-btn" type="submit">Volunteer Pickup</button>
               </form>
               <button class="clear-btn" data-clear="pickup" type="button">Clear Pickup</button>
             </section>
 
-            <section class="ride-slot">
+            <section class="ride-slot dropoff-slot">
               <h4>Drop-Off</h4>
               <p data-dropoff-status></p>
               <form class="volunteer-form" data-type="dropoff">
-                <input name="parentName" required placeholder="Parent name" />
-                <button type="submit">Volunteer Drop-Off</button>
+                <button class="dropoff-btn" type="submit">Volunteer Drop-Off</button>
               </form>
               <button class="clear-btn" data-clear="dropoff" type="button">Clear Drop-Off</button>
             </section>
@@ -113,6 +125,8 @@
       </article>
     </template>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
